@@ -16,6 +16,20 @@ body {
     padding: 20px;
     display: flex;
     justify-content: center;
+    cursor: default;
+    user-select: none;
+}
+
+input[type="text"],
+input[type="number"] {
+    cursor: text;
+    user-select: text;
+}
+
+button,
+.task-content,
+.tab-btn {
+    cursor: pointer;
 }
 
 /* FIX: Der Haupt-Container erzwingt jetzt die volle Breite für Kinder */
@@ -257,4 +271,89 @@ footer {
     animation: pulse-glow 2s infinite;
     border: 2px solid var(--primary) !important;
     background: rgba(0, 212, 255, 0.1) !important;
+}
+
+.streak-display {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 165, 0, 0.2);
+    border: 1px solid orange;
+    padding: 5px 12px;
+    border-radius: 20px;
+    color: orange;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.streak-badge {
+    display: inline-block;
+    background: rgba(255, 165, 0, 0.15);
+    color: #ffa500;
+    border: 1px solid #ffa500;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    margin-bottom: 0px;
+    animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 3px 10px;
+    cursor: default;
+    user-select: none;
+    pointer-events: none;
+}
+
+@keyframes pop-in {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.sortable-ghost {
+    opacity: 0.3;
+    background: var(--primary) !important;
+}
+
+/* Der Container für die 6 Punkte */
+.drag-handle {
+    display: grid;
+    grid-template-columns: repeat(2, 4px); /* 2 Spalten */
+    gap: 3px;                              /* Abstand zwischen den Punkten */
+    cursor: grab;                          /* Zeigt die "Hand" beim Drüberfahren */
+    padding: 10px;                         /* Größere Klickfläche */
+    margin-right: 5px;
+    opacity: 0.5;                          /* Dezent im Hintergrund */
+    transition: opacity 0.2s;
+}
+
+.drag-handle:hover {
+    opacity: 1;                            /* Wird hell beim Drüberfahren */
+}
+
+/* Die einzelnen Punkte */
+.drag-handle span {
+    width: 4px;
+    height: 4px;
+    background-color: var(--text);         /* Nutzt deine Textfarbe */
+    border-radius: 50%;
+}
+
+/* Optional: Während man zieht, soll die Hand zur Faust werden */
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.task-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }

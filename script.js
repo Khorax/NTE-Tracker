@@ -9,157 +9,82 @@ let staminaInterval;
 function loadApp() {
     let data = JSON.parse(localStorage.getItem('nte_data'));
     if (!data) {
-        data = { lastDaily: '', lastWeekly: '', done: [], customDailies: [...defaultTasks.dailies], customWeeklies: [...defaultTasks.weeklies] };
+        data = { 
+            lastDailyReset: 0, 
+            lastWeeklyReset: 0, 
+            done: [], 
+            customDailies: [...defaultTasks.dailies], 
+            customWeeklies: [...defaultTasks.weeklies],
+            streak: 0,
+            lastFullClear: '' 
+        };
     }
 
-    // 1. Stamina-Daten laden
-    const savedStamina = localStorage.getItem('nte_stamina_val');
-    const maxStamina = parseInt(localStorage.getItem('nte_stamina_max')) || 240;
-    
-    document.getElementById('current-stamina').value = savedStamina || '';
-    document.getElementById('max-stamina').value = maxStamina;
-
-    // 2. Zeit-Logik für Reset
     const now = new Date();
-    const today = now.toDateString();
-    const thisWeek = getWeekNumber(now);
+    // Daily Reset 5:00 Uhr
+    const dailyResetTime = new Date(now);
+    dailyResetTime.setHours(5, 0, 0, 0);
+    if (now < dailyResetTime) dailyResetTime.setDate(dailyResetTime.getDate() - 1);
 
-    if (data.lastDaily !== today) {
+    // Reset Logik
+    if (data.lastDailyReset < dailyResetTime.getTime()) {
         data.done = data.done.filter(t => !data.customDailies.includes(t));
-        data.lastDaily = today;
+        data.lastDailyReset = now.getTime();
     }
-    if (data.lastWeekly !== thisWeek) {
-        data.done = data.done.filter(t => !data.customWeeklies.includes(t));
-        data.lastWeekly = thisWeek;
+    
+    // Streak-Reset (Falls ein Tag komplett verpasst wurde)
+    const yesterday = new Date(dailyResetTime);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (data.lastFullClear && new Date(data.lastFullClear) < yesterday) {
+        data.streak = 0; 
     }
 
     save(data);
     
-    // 3. UI & Timer starten
-    updateStaminaTimer(); 
-    startStaminaLiveUpdater(); 
+    // Stamina Felder füllen
+    document.getElementById('current-stamina').value = localStorage.getItem('nte_stamina_val') || '';
+    document.getElementById('max-stamina').value = localStorage.getItem('nte_stamina_max') || 240;
+
+    initSortable();
+    startStaminaLiveUpdater();
+    updateStaminaTimer();
+    
+    // WICHTIG: Erst jetzt den Tab schalten, damit render() korrekt läuft
     switchTab('dailies');
 }
 
-function startStaminaLiveUpdater() {
-    if (staminaInterval) clearInterval(staminaInterval);
-    
-    staminaInterval = setInterval(() => {
-        const currInput = document.getElementById('current-stamina');
-        const maxInput = document.getElementById('max-stamina');
-        const lastSaveTime = localStorage.getItem('nte_stamina_time');
-        
-        let curr = parseInt(currInput.value);
-        let max = parseInt(maxInput.value) || 240;
-
-        if (!isNaN(curr) && curr < max && lastSaveTime) {
-            const now = new Date().getTime();
-            const past = parseInt(lastSaveTime);
-            const msPassed = now - past;
-
-            if (msPassed >= 360000) {
-                const pointsGained = Math.floor(msPassed / 360000);
-                curr = Math.min(max, curr + pointsGained);
-                currInput.value = curr;
-                
-                const newSaveTime = past + (pointsGained * 360000);
-                localStorage.setItem('nte_stamina_time', newSaveTime.toString());
-                localStorage.setItem('nte_stamina_val', curr.toString());
-                
-                updateStaminaTimer();
-            }
+function initSortable() {
+    const el = document.getElementById('task-list');
+    if (!el) return;
+    Sortable.create(el, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: function() {
+            const data = JSON.parse(localStorage.getItem('nte_data'));
+            const items = Array.from(el.querySelectorAll('.task-content span'));
+            const newOrder = items.map(s => s.innerText);
+            if (currentTab === 'dailies') data.customDailies = newOrder;
+            else data.customWeeklies = newOrder;
+            save(data);
         }
-    }, 1000);
-}
-
-function updateStaminaTimer() {
-    const currField = document.getElementById('current-stamina');
-    const maxField = document.getElementById('max-stamina');
-    const toolCard = document.querySelector('.tool-card');
-    const res = document.getElementById('stamina-result');
-
-    const curr = currField.value;
-    const max = maxField.value || 240;
-
-    if (document.activeElement === currField || !localStorage.getItem('nte_stamina_time')) {
-        localStorage.setItem('nte_stamina_time', new Date().getTime().toString());
-    }
-    
-    localStorage.setItem('nte_stamina_val', curr);
-    localStorage.setItem('nte_stamina_max', max);
-
-    if (curr === "" || isNaN(curr)) { 
-        res.innerText = "Gib deine Stamina ein..."; 
-        if(toolCard) toolCard.classList.remove('stamina-full');
-        return; 
-    }
-    
-    const current = parseInt(curr);
-    const maxVal = parseInt(max);
-
-    if (current >= maxVal) { 
-        res.innerHTML = "<span style='color:var(--primary); font-weight:bold;'>VOLL!</span>"; 
-        if(toolCard) toolCard.classList.add('stamina-full');
-        return; 
-    }
-
-    if(toolCard) toolCard.classList.remove('stamina-full');
-
-    const lastTime = parseInt(localStorage.getItem('nte_stamina_time'));
-    const msSinceLastPoint = new Date().getTime() - lastTime;
-    const totalPointsNeeded = maxVal - current;
-    const totalMsToFull = (totalPointsNeeded * 360000) - (msSinceLastPoint % 360000);
-    
-    const target = new Date(new Date().getTime() + totalMsToFull);
-    const h = Math.floor(totalMsToFull / 3600000);
-    const m = Math.floor((totalMsToFull % 3600000) / 60000);
-
-    res.innerHTML = `Voll in <b>${h}h ${m}m</b><br><small>ca. ${target.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} Uhr</small>`;
-}
-
-function switchTab(tab) {
-    currentTab = tab;
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.innerText.toLowerCase() === tab);
     });
-
-    const listContainer = document.getElementById('task-list');
-    const toolsContainer = document.getElementById('tools-container');
-    const addTaskArea = document.querySelector('.add-task-container');
-    const resetBtn = document.getElementById('tab-reset-btn');
-    
-    // NEU: Referenzen für die Progress-Elemente
-    const progressBar = document.querySelector('.progress-container');
-    const progressText = document.getElementById('progress-text');
-
-    if (tab === 'tools') {
-        listContainer.style.display = 'none';
-        addTaskArea.style.display = 'none';
-        toolsContainer.style.display = 'block';
-        resetBtn.style.display = 'none';
-        
-        // Progress ausblenden
-        if(progressBar) progressBar.style.display = 'none';
-        if(progressText) progressText.style.display = 'none';
-    } else {
-        listContainer.style.display = 'flex';
-        addTaskArea.style.display = 'flex';
-        toolsContainer.style.display = 'none';
-        resetBtn.style.display = 'inline-block';
-        resetBtn.innerText = `${tab.charAt(0).toUpperCase() + tab.slice(1)} zurücksetzen`;
-        
-        // Progress wieder einblenden
-        if(progressBar) progressBar.style.display = 'block';
-        if(progressText) progressText.style.display = 'block';
-        
-        render();
-    }
 }
 
 function render() {
     const data = JSON.parse(localStorage.getItem('nte_data'));
     const listContainer = document.getElementById('task-list');
-    if(!listContainer) return;
+    if (!listContainer) return;
+
+    // Streak Anzeige Update
+    const streakCont = document.getElementById('streak-container');
+    const streakCount = document.getElementById('streak-count');
+    if (currentTab === 'dailies' && data.streak && data.streak > 0) {
+        streakCont.style.display = 'inline-block';
+        streakCount.innerText = data.streak;
+    } else {
+        streakCont.style.display = 'none'; // Versteckt den Streak in Weeklies & Tools
+    }
+
     listContainer.innerHTML = '';
     const currentTasks = currentTab === 'dailies' ? data.customDailies : data.customWeeklies;
     
@@ -168,49 +93,100 @@ function render() {
         const item = document.createElement('div');
         item.className = `task-item ${isDone ? 'done' : ''}`;
         item.innerHTML = `
-            <div class="task-content"><input type="checkbox" ${isDone ? 'checked' : ''}><span>${task}</span></div>
-            <button class="delete-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`;
+            <div class="task-content">
+                <input type="checkbox" ${isDone ? 'checked' : ''}>
+                <span>${task}</span>
+            </div>
+            <div class="task-actions">
+                <button class="delete-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+                <div class="drag-handle">
+                    <span></span><span></span>
+                    <span></span><span></span>
+                    <span></span><span></span>
+                </div>
+            </div>
+        `;
         item.querySelector('.task-content').onclick = () => toggleTask(task);
         item.querySelector('.delete-btn').onclick = (e) => { e.stopPropagation(); deleteTask(task); };
         listContainer.appendChild(item);
     });
+    
     updateProgress(data, currentTasks);
 }
 
 function toggleTask(task) {
     const data = JSON.parse(localStorage.getItem('nte_data'));
     const isChecking = !data.done.includes(task);
-
-    if (isChecking) {
-        data.done.push(task);
-    } else {
-        data.done = data.done.filter(t => t !== task);
-    }
+    
+    if (isChecking) data.done.push(task);
+    else data.done = data.done.filter(t => t !== task);
     
     save(data);
-    render();
 
-    if (isChecking) {
-        const currentTasks = currentTab === 'dailies' ? data.customDailies : data.customWeeklies;
-        const allDone = currentTasks.every(t => data.done.includes(t));
+    // Streak Check
+    if (isChecking && currentTab === 'dailies') {
+        const today = new Date().toDateString();
+        const allDone = data.customDailies.every(t => data.done.includes(t));
         
-        if (allDone && currentTasks.length > 0) {
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: ['#00d4ff', '#ff00ff', '#ffffff']
-            });
+        if (allDone && data.lastFullClear !== today) {
+            data.streak = (data.streak || 0) + 1;
+            data.lastFullClear = today;
+            save(data);
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         }
     }
+    
+    render();
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.innerText.toLowerCase() === tab));
+    document.getElementById('tools-container').style.display = tab === 'tools' ? 'block' : 'none';
+    document.getElementById('tasks-area').style.display = tab === 'tools' ? 'none' : 'block';
+    document.getElementById('tab-reset-btn').style.display = tab === 'tools' ? 'none' : 'inline-block';
+    document.getElementById('tab-reset-btn').innerText = `${tab.charAt(0).toUpperCase() + tab.slice(1)} zurücksetzen`;
+    render();
+}
+
+// Hilfsfunktionen (Stamina etc.)
+function startStaminaLiveUpdater() {
+    if (staminaInterval) clearInterval(staminaInterval);
+    staminaInterval = setInterval(updateStaminaTimer, 10000); // Alle 10 Sek prüfen
+}
+
+function updateStaminaTimer() {
+    const currInput = document.getElementById('current-stamina');
+    const maxInput = document.getElementById('max-stamina');
+    const res = document.getElementById('stamina-result');
+    
+    let curr = parseInt(currInput.value);
+    let max = parseInt(maxInput.value) || 240;
+    
+    localStorage.setItem('nte_stamina_val', currInput.value);
+    localStorage.setItem('nte_stamina_max', max);
+
+    if (isNaN(curr)) { res.innerText = "Gib deine Stamina ein..."; return; }
+    if (curr >= max) { res.innerHTML = "<b>VOLL!</b>"; return; }
+
+    const diff = max - curr;
+    const totalMinutes = diff * 6; // 1 Punkt = 6 Min
+    const target = new Date(new Date().getTime() + totalMinutes * 60000);
+    
+    res.innerHTML = `Voll in <b>${Math.floor(totalMinutes/60)}h ${totalMinutes%60}m</b><br><small>ca. ${target.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} Uhr</small>`;
 }
 
 function addNewTask() {
     const input = document.getElementById('new-task-input');
-    const name = input.value.trim();
-    if (!name) return;
+    if (!input.value.trim()) return;
     const data = JSON.parse(localStorage.getItem('nte_data'));
-    currentTab === 'dailies' ? data.customDailies.push(name) : data.customWeeklies.push(name);
+    const list = currentTab === 'dailies' ? data.customDailies : data.customWeeklies;
+    list.push(input.value.trim());
     save(data);
     input.value = '';
     render();
@@ -226,10 +202,10 @@ function deleteTask(task) {
 }
 
 function confirmTabReset() {
-    const data = JSON.parse(localStorage.getItem('nte_data'));
-    const tasksInTab = currentTab === 'dailies' ? data.customDailies : data.customWeeklies;
     if (confirm(`${currentTab} zurücksetzen?`)) {
-        data.done = data.done.filter(t => !tasksInTab.includes(t));
+        const data = JSON.parse(localStorage.getItem('nte_data'));
+        const tasks = currentTab === 'dailies' ? data.customDailies : data.customWeeklies;
+        data.done = data.done.filter(t => !tasks.includes(t));
         save(data);
         render();
     }
@@ -238,19 +214,11 @@ function confirmTabReset() {
 function updateProgress(data, currentTasks) {
     const done = currentTasks.filter(t => data.done.includes(t)).length;
     const perc = currentTasks.length > 0 ? (done / currentTasks.length) * 100 : 0;
-    const bar = document.getElementById('progress-bar');
-    const text = document.getElementById('progress-text');
-    if(bar) bar.style.width = perc + '%';
-    if(text) text.innerText = `${done} / ${currentTasks.length} erledigt`;
+    document.getElementById('progress-bar').style.width = perc + '%';
+    document.getElementById('progress-text').innerText = `${done} / ${currentTasks.length} erledigt`;
 }
 
 function save(data) { localStorage.setItem('nte_data', JSON.stringify(data)); }
-
-function getWeekNumber(d) {
-    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-    return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(), 0, 1))) / 86400000) + 1) / 7);
-}
 
 document.getElementById('current-stamina').addEventListener('input', updateStaminaTimer);
 document.getElementById('max-stamina').addEventListener('input', updateStaminaTimer);
