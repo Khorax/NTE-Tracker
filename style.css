@@ -1,0 +1,260 @@
+:root {
+    --primary: #00d4ff;
+    --secondary: #ff00ff;
+    --bg: #0f0f0f;
+    --card: #1a1a1a;
+    --text: #e0e0e0;
+    --danger: #ff4444;
+}
+
+/* Grund-Setup */
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+/* FIX: Der Haupt-Container erzwingt jetzt die volle Breite für Kinder */
+.container {
+    width: 100%;
+    max-width: 450px;
+    display: block; /* Verhindert seitliches Schrumpfen der Inhalte */
+}
+
+header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+h1 {
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+/* Fortschrittsanzeige */
+.progress-container {
+    background: #333;
+    height: 12px;
+    border-radius: 6px;
+    margin: 15px 0 5px 0;
+    overflow: hidden;
+}
+
+#progress-bar {
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    width: 0%;
+    height: 100%;
+    transition: width 0.5s ease-out;
+}
+
+#progress-text {
+    font-size: 0.85rem;
+    color: #888;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+/* Tabs: Absolut stabil im Grid */
+.tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.tab-btn {
+    padding: 14px 5px;
+    background: var(--card) !important;
+    color: var(--text) !important;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.tab-btn.active {
+    border-color: var(--primary) !important;
+    background: rgba(0, 212, 255, 0.1) !important;
+    color: var(--primary) !important;
+}
+
+/* Inhalts-Bereiche (Dailies, Weeklies, Tools) */
+#task-list, #tools-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Items & Cards - Volle Breite wie die Tabs */
+.task-item, .tool-card {
+    background: var(--card);
+    padding: 18px;
+    border-radius: 12px;
+    box-sizing: border-box; /* Padding wird in die 100% Breite eingerechnet */
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+/* Tool-Card braucht Spalten-Layout für Text und Inputs */
+.tool-card {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.tool-card h3 {
+    margin: 0 0 15px 0;
+    color: var(--primary);
+    text-align: center;
+    font-size: 1.2rem;
+}
+
+/* Aufgaben-Inhalt & Mülleimer FIX */
+.task-content {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    cursor: pointer;
+}
+
+.task-content input {
+    margin-right: 15px;
+    accent-color: var(--primary);
+    width: 20px;
+    height: 20px;
+}
+
+.task-item.done {
+    opacity: 0.4;
+}
+
+.task-item.done span {
+    text-decoration: line-through;
+}
+
+.delete-btn {
+    background: transparent;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    padding: 5px;
+    margin-left: auto; /* Schiebt den Mülleimer nach ganz rechts */
+    transition: transform 0.2s;
+}
+
+.delete-btn:hover {
+    transform: scale(1.2);
+}
+
+/* Stamina Stamina-Inputs Zentrierung */
+.stamina-input-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin: 10px 0 20px 0;
+}
+
+.stamina-input-group input {
+    width: 90px;
+    padding: 12px;
+    background: #000;
+    border: 1px solid #333;
+    color: var(--primary);
+    border-radius: 8px;
+    font-size: 1.5rem;
+    text-align: center;
+    font-weight: bold;
+}
+
+.stamina-divider {
+    font-size: 1.5rem;
+    color: #444;
+    font-weight: bold;
+}
+
+.result-box {
+    padding: 15px;
+    background: rgba(0, 212, 255, 0.05);
+    border: 1px solid rgba(0, 212, 255, 0.1);
+    border-radius: 10px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* Neue Aufgabe hinzufügen */
+.add-task-container {
+    display: flex;
+    gap: 12px;
+    margin-top: 25px;
+    width: 100%;
+}
+
+#new-task-input {
+    flex: 1;
+    padding: 14px;
+    background: var(--card);
+    border: 1px solid #333;
+    color: white;
+    border-radius: 10px;
+    outline: none;
+}
+
+#new-task-input:focus {
+    border-color: var(--primary);
+}
+
+#add-btn {
+    padding: 0 25px;
+    background: var(--primary);
+    color: black;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Footer & Reset */
+footer {
+    margin-top: 40px;
+    text-align: center;
+}
+
+.reset-btn {
+    background: transparent;
+    border: 1px solid #444;
+    color: #666;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.reset-btn:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+/* Animation für das Pulsieren */
+@keyframes pulse-glow {
+    0% { box-shadow: 0 0 5px var(--primary); border-color: var(--primary); }
+    50% { box-shadow: 0 0 20px var(--primary); border-color: #fff; }
+    100% { box-shadow: 0 0 5px var(--primary); border-color: var(--primary); }
+}
+
+/* Diese Klasse wird per JS vergeben, wenn Stamina voll ist */
+.stamina-full {
+    animation: pulse-glow 2s infinite;
+    border: 2px solid var(--primary) !important;
+    background: rgba(0, 212, 255, 0.1) !important;
+}

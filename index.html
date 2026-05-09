@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTE Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NTE Tracker</h1>
+            <div class="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <p id="progress-text">0/0 erledigt</p>
+        </header>
+        
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="switchTab('dailies')">Dailies</button>
+            <button class="tab-btn" onclick="switchTab('weeklies')">Weeklies</button>
+            <button class="tab-btn" onclick="switchTab('tools')">Tools</button>
+        </nav>
+
+        <main id="tools-container" style="display: none;">
+            <div class="tool-card">
+                <h3>Stamina Timer</h3>
+                <p>Wie viel Stamina hast du aktuell?</p>
+                <div class="stamina-input-group">
+                    <input type="number" id="current-stamina" placeholder="0">
+                    <span class="stamina-divider">/</span>
+                    <input type="number" id="max-stamina" value="240">
+                </div>
+                <div id="stamina-result" class="result-box">
+                    Gib deine Stamina ein...
+                </div>
+            </div>
+        </main>
+
+        <main id="tasks-area"> <div id="task-list" class="list"></div>
+            <div class="add-task-container">
+                <input type="text" id="new-task-input" placeholder="Neue Aufgabe hinzufügen...">
+                <button onclick="addNewTask()" id="add-btn">+</button>
+            </div>
+        </main>
+
+        <footer>
+            <button class="reset-btn" id="tab-reset-btn" onclick="confirmTabReset()">
+                Dailies zurücksetzen
+            </button>
+        </footer>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
