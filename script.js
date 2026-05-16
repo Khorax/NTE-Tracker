@@ -21,24 +21,58 @@ function loadApp() {
     }
 
     const now = new Date();
-    // Daily Reset 5:00 Uhr
-    const dailyResetTime = new Date(now);
-    dailyResetTime.setHours(5, 0, 0, 0);
-    if (now < dailyResetTime) dailyResetTime.setDate(dailyResetTime.getDate() - 1);
 
-    // Reset Logik
-    if (data.lastDailyReset < dailyResetTime.getTime()) {
+    // ==========================================
+    // 1. DAILY RESET LOGIK (Jeden Tag um 05:00 Uhr)
+    // ==========================================
+    const currentDailyResetTarget = new Date(now);
+    currentDailyResetTarget.setHours(5, 0, 0, 0);
+    
+    // Wenn es heute noch VOR 5 Uhr morgens ist, gehört die Zeit logisch noch zum Vortag.
+    // Der "aktive" Reset-Zeitpunkt liegt also 24h zurück.
+    if (now < currentDailyResetTarget) {
+        currentDailyResetTarget.setDate(currentDailyResetTarget.getDate() - 1);
+    }
+
+    // Wenn der gespeicherte Zeitstempel älter ist als das aktuelle Reset-Ziel -> RESET!
+    if (data.lastDailyReset < currentDailyResetTarget.getTime()) {
         data.done = data.done.filter(t => !data.customDailies.includes(t));
-        data.lastDailyReset = now.getTime();
+        // Wir speichern das exakte Reset-Ziel, nicht die aktuelle Uhrzeit!
+        data.lastDailyReset = currentDailyResetTarget.getTime();
     }
     
     // Streak-Reset (Falls ein Tag komplett verpasst wurde)
-    const yesterday = new Date(dailyResetTime);
+    const yesterday = new Date(currentDailyResetTarget);
     yesterday.setDate(yesterday.getDate() - 1);
     if (data.lastFullClear && new Date(data.lastFullClear) < yesterday) {
         data.streak = 0; 
     }
 
+    // ==========================================
+    // 2. WEEKLY RESET LOGIK (Montags um 05:00 Uhr)
+    // ==========================================
+    const currentWeeklyResetTarget = new Date(now);
+    currentWeeklyResetTarget.setHours(5, 0, 0, 0);
+    
+    // Berechne, wie viele Tage wir vom letzten Montag entfernt sind
+    const currentDay = currentWeeklyResetTarget.getDay(); // 0 = Sonntag, 1 = Montag...
+    const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
+    currentWeeklyResetTarget.setDate(currentWeeklyResetTarget.getDate() - daysSinceMonday);
+
+    // Spezialfall: Wenn es Montag ist, aber VOR 5 Uhr morgens, gilt der Reset der Vorwoche
+    if (currentDay === 1 && now < currentWeeklyResetTarget) {
+        currentWeeklyResetTarget.setDate(currentWeeklyResetTarget.getDate() - 7);
+    }
+
+    // Wenn der gespeicherte Weekly-Zeitstempel älter ist als das errechnete Wochen-Reset-Ziel -> RESET!
+    if (data.lastWeeklyReset < currentWeeklyResetTarget.getTime()) {
+        data.done = data.done.filter(t => !data.customWeeklies.includes(t));
+        data.lastWeeklyReset = currentWeeklyResetTarget.getTime();
+    }
+
+    // ==========================================
+    // App-Setup fortsetzen
+    // ==========================================
     save(data);
     
     // Stamina Felder füllen
