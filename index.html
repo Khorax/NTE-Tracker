@@ -9,14 +9,17 @@
 <body>
     <div class="container">
         <header>
-            <h1>NTE Tracker</h1>
+            <div class="header-top">
+                <h1>NTE Tracker</h1>
+                <div id="streak-container" class="streak-badge" style="display: none;">
+                    🔥 <span id="streak-count">0</span> Tage Streak
+                </div>
+            </div>
+            
             <div class="progress-container">
                 <div id="progress-bar"></div>
             </div>
             <p id="progress-text">0/0 erledigt</p>
-            <div id="streak-container" class="streak-badge" style="display: none;">
-                🔥 <span id="streak-count">0</span> Tage Streak
-            </div>
         </header>
         
         <nav class="tabs">
