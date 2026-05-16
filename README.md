@@ -1,7 +1,7 @@
 # 🚀 NTE Tracker
 
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
-![Version](https://img.shields.io/badge/Version-1.2-blue)
+![Version](https://img.shields.io/badge/Version-1.3-blue)
 ![Features](https://img.shields.io/badge/Features-Smart--Reset%20%7C%20Stamina--Live%20%7C%20Progression-orange)
 
 A minimalist Daily & Weekly Tracker for gamers, optimized for mobile web. Keep track of your daily tasks, weekly bosses, and stamina at a glance.
